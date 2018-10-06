@@ -52,16 +52,4 @@
         redirect("/backup/settings?msg=" & encodeUrl("Error, the backup file was not found with the name: " & filename))  
         
       # Serve the file
-      let ext = splitFile(filename).ext
-      await response.sendHeaders(Http200, {"Content-Disposition": "attachment", "filename": @"backupname", "Content-Type": "application/db"}.newStringTable())
-      var file = openAsync(filepath, fmRead)
-      var data = await file.read(4000)
-
-      while data.len != 0:
-        await response.client.send(data)
-        data = await file.read(4000)
-      
-      file.close()
-      
-      if "nginx" notin commandLineParams() and not defined(nginx):
-        response.client.close()
+      sendFile(filepath)
