@@ -1,10 +1,16 @@
 /* This plugin style_private.css file will be added to the public folder, but no automated import of the file will be generated */
 
 div#backup {
-  max-width: 600px;
+  background: white;
+  border-radius: 10px;
+  border: 1px solid gray;
   margin-left: auto;
   margin-right: auto;
-  margin-top: 20px;
+  max-width: 500px;
+  padding: 10px;
+}
+div#backup #backupFront {
+  text-align: center;
 }
 div#backup li.backup a {
   margin-right: 10px;
@@ -18,9 +24,6 @@ div#backup li.backup {
   padding: 10px 15px;
   width: 100%;
 }
-div#backup form.backup {
-  margin-bottom: 20px;
-}
 div#backup form.backup i,
 div#backup form.backup label {
   display: block;
@@ -32,14 +35,17 @@ div#backup li.backup a.btn {
   margin-top: 0px;
 }
 div#backup div.backup.buttons {
+  text-align: center;
   margin-bottom: 20px;
 }
 div#backup form.backup {
   border: 1px solid rgba(149, 145, 145, 0.63);
-  padding: 10px;
-  width: 300px;
-  text-align: center;
   display: none;
+  margin-bottom: 20px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 10px;
+  text-align: center;
 }
 div#backup form.backup input.backuptime,
 div#backup form.backup input.keepbackup {

@@ -12,28 +12,28 @@
 <link rel="stylesheet" href="/css/backup_private.css">
 <script src="/js/backup_private.js" defer></script>
 
-# if msg != "":
-<div style="color: red; text-align: center;">
-  $msg
-</div>
-# end if
-
 <div id="backup">
-  <div>
+  # if msg != "":
+  <div style="color: red; text-align: center;">
+    $msg
+  </div>
+  # end if
+
+  <div id="backupFront">
     <h1>Backup settings</h1>
+
+    # let (n, v, d, u) = pluginExtractDetails("backup")
+    <div id="pluginDetails">
+      <hr>
+      <div> <b>Package:</b> ${n}</div>
+      <div> <b>Version:</b> ${v}</div>
+      <div> <b>Description:</b><br>${d}</div>
+      <div> <b>URL:</b> <a href="${u}">${u}</a></div>
+      <hr>
+    </div>
+
   </div>
-  
-  <div id="backupFront" style="width: 300px; margin-right: auto;">
-  
-    <div>----------------------------------------------------------------</div>
-    <div> Package:      $pluginTitle plugin</div>
-    <div> Author:       $pluginAuthor</div>
-    <div> Version:      $pluginVersion</div>
-    <div> Version date: $pluginVersionDate</div>
-    <div>----------------------------------------------------------------</div>
-  
-  </div>
-  
+
   <hr>
 
   <div class="backup buttons">
@@ -44,7 +44,7 @@
   # let backuptime = getValue(db, sql"SELECT value FROM backup_settings WHERE element = ?", "backuptime")
   # let keepbackup = getValue(db, sql"SELECT value FROM backup_settings WHERE element = ?", "keepbackup")
   <form method="get" action="/backup/backupsettings" class="backup">
-    
+
     <div>
       <label>Backup time (0 or empty = disabled)</label>
       <div>
@@ -74,14 +74,14 @@
 #     if backupName == "website.db":
 #       continue
 #     end if
-#     
+#
       <li class="backup">
         <a href="/backup/download?backupname=$backupName" class="download" download="$backupName">Download</a>
-        <a href="#!" class="btn btn-danger load">Load</a>
-        <a href="/backup/loadbackup?backupname=$backupName" class="btn btn-danger loadSure">This will override your current database</a>
-        <span>$backupName</span>
+        <a href="#!" class="btn btn-danger load" data-url="/backup/loadbackup?backupname=$backupName">Load</a>
+        <a href="#!" class="btn btn-danger delete" data-url="/backup/delete?backupname=$backupName">Delete</a>
+        <span class="name">$backupName</span>
       </li>
-        
+
 #   end for
   </ul>
 </div>

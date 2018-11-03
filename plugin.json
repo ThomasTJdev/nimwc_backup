@@ -2,14 +2,14 @@
   {
     "name": "Backup",
     "foldername": "backup",
-    "version": "0.2",
+    "version": "0.3",
     "url": "https://github.com/ThomasTJdev/nimwc_backup.git",
     "method": "git",
     "tags": [
       "backup",
       "database"
     ],
-    "description": "Cron job to make backups of the websites database",
+    "description": "Cron job to make backups of the database",
     "license": "MIT",
     "web": "https://github.com/ThomasTJdev/nimwc_backup"
   }
