@@ -6,6 +6,7 @@ div#backup {
   border: 1px solid gray;
   margin-left: auto;
   margin-right: auto;
+  margin-top: 60px;
   max-width: 500px;
   padding: 10px;
 }
@@ -24,6 +25,9 @@ div#backup li.backup {
   padding: 10px 15px;
   width: 100%;
 }
+div#backup li a.delete {
+  background-color: red;
+}
 div#backup form.backup i,
 div#backup form.backup label {
   display: block;
@@ -40,7 +44,6 @@ div#backup div.backup.buttons {
 }
 div#backup form.backup {
   border: 1px solid rgba(149, 145, 145, 0.63);
-  display: none;
   margin-bottom: 20px;
   margin-left: auto;
   margin-right: auto;
@@ -49,7 +52,7 @@ div#backup form.backup {
 }
 div#backup form.backup input.backuptime,
 div#backup form.backup input.keepbackup {
-  width: 50px;
+  width: 100px;
   text-align: center;
   margin-left: auto;
   margin-right: auto;

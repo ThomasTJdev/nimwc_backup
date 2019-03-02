@@ -1,65 +1,89 @@
-  get "/backup/settings":
-    createTFD()
-    if c.loggedIn and c.rank in [Admin, Moderator]:
-      resp genMain(c, genBackupSettings(c, db, @"msg"))
+get "/backup/settings":
+  createTFD()
+  if not c.loggedIn or c.rank notin [Admin, Moderator]:
+    redirect("/")
 
-  get "/backup/backupsettings":
-    createTFD()
-    if c.loggedIn and c.rank in [Admin, Moderator]:
-      if (not isDigit(@"backuptime") or "." in @"backuptime") or (not isDigit(@"keepbackup") or "." in @"keepbackup"):
-        redirect("/backup/settings?msg=" & encodeUrl("Backup time needs to be a whole number. You provided backuptime: " & @"backuptime" & " and keep backup: " & @"keepbackup"))
+  resp genMain(c, genBackupSettings(c, db, @"msg"))
 
-      let execUno = tryExec(db, sql"UPDATE backup_settings SET value = ?, modified = ? WHERE element = ?", @"backuptime", toInt(epochTime()), "backuptime")
+get "/backup/backupsettings":
+  createTFD()
+  if not c.loggedIn or c.rank notin [Admin, Moderator]:
+    redirect("/")
 
-      let execDuo = tryExec(db, sql"UPDATE backup_settings SET value = ?, modified = ? WHERE element = ?", @"keepbackup", toInt(epochTime()), "keepbackup")
+  if (not isDigit(@"backuptime") or "." in @"backuptime") or (not isDigit(@"keepbackup") or "." in @"keepbackup"):
+    redirect("/backup/settings?msg=" & encodeUrl("Backup time needs to be a whole number. You provided backuptime: " & @"backuptime" & " and keep backup: " & @"keepbackup"))
 
-      if execUno and execDuo:
-        asyncCheck cronBackup(db)
-        redirect("/backup/settings")
+  # Update backup time
+  let execUno = tryExec(db, sql"UPDATE backup_settings SET value = ?, modified = ? WHERE element = ?", @"backuptime", toInt(epochTime()), "backuptime")
 
-      else:
-        redirect("/backup/settings?msg=" & encodeUrl("Something went wrong!"))
+  # Update saving time
+  let execDuo = tryExec(db, sql"UPDATE backup_settings SET value = ?, modified = ? WHERE element = ?", @"keepbackup", toInt(epochTime()), "keepbackup")
 
-  get "/backup/loadbackup":
-    createTFD()
-    if c.loggedIn and c.rank in [Admin, Moderator]:
-      if fileExists("data/" & @"backupname"):
-        let execOutput = execCmd("cp data/" & @"backupname" & " data/website.db")
-        if execOutput == 0:
-          redirect("/backup/settings?msg=" & encodeUrl("Backup \"" & @"backupname" & "\" was loaded."))
-        else:
-          redirect("/backup/settings?msg=" & encodeUrl("Error, the backup could not be loaded."))
+  # Update backup dir
+  var execTres = true
+  if @"backupdir" == "" or @"backupdir" == "data/":
+    execTres = tryExec(db, sql"UPDATE backup_settings SET value = ?, modified = ? WHERE element = ?", "data/", toInt(epochTime()), "backupdir")
+  else:
+    execTres = tryExec(db, sql"UPDATE backup_settings SET value = ?, modified = ? WHERE element = ?", @"backupdir", toInt(epochTime()), "backupdir")
 
-      redirect("/backup/settings?msg=" & encodeUrl("Error, no backup with that name was found."))
+  if execUno and execDuo and execTres:
+    asyncCheck cronBackup(db)
+    redirect("/backup/settings")
 
-  get "/backup/backupnow":
-    createTFD()
-    if c.loggedIn and c.rank in [Admin, Moderator]:
-      if backupNow():
-        redirect("/backup/settings")
-      else:
-        redirect("/backup/settings?msg=" & encodeUrl("Error, something went wrong creating the backup."))
+  else:
+    redirect("/backup/settings?msg=" & encodeUrl("Something went wrong!"))
 
-  get "/backup/download":
-    ## Get a file
-    createTFD()
-    if c.loggedIn and c.rank in [Admin, Moderator]:
-      let filename = @"backupname"
+get "/backup/loadbackup":
+  createTFD()
+  if not c.loggedIn or c.rank notin [Admin, Moderator]:
+    redirect("/")
 
-      var filepath = "data/" & filename
+  let backupDir = backupDir(db)
+  if fileExists(backupDir & @"backupname"):
+    echo "cp " & backupDir & @"backupname" & " " & dbDir & "website.db"
+    try:
+      copyFile(backupDir & @"backupname", dbDir & "website.db")
+      redirect("/backup/settings?msg=" & encodeUrl("Backup \"" & @"backupname" & "\" was loaded."))
+    except:
+      redirect("/backup/settings?msg=" & encodeUrl("Error, the backup could not be loaded."))
 
-      if not fileExists(filepath):
-        redirect("/backup/settings?msg=" & encodeUrl("Error, the backup file was not found with the name: " & filename))
+  redirect("/backup/settings?msg=" & encodeUrl("Error, no backup with that name was found."))
 
-      # Serve the file
-      sendFile(filepath)
+get "/backup/backupnow":
+  createTFD()
+  if not c.loggedIn or c.rank notin [Admin, Moderator]:
+    redirect("/")
 
-  get "/backup/delete":
-    createTFD()
-    if c.loggedIn and c.rank in [Admin, Moderator]:
-      if fileExists("data/" & @"backupname"):
-        let execOutput = execCmd("rm data/" & @"backupname")
-        if execOutput == 0:
-          redirect("/backup/settings")
-        else:
-          redirect("/backup/settings?msg=" & encodeUrl("Error, the backup could not be deleted (" & @"backupname" & ")."))
+  if backupNow(db):
+    redirect("/backup/settings")
+  else:
+    redirect("/backup/settings?msg=" & encodeUrl("Error, something went wrong creating the backup."))
+
+get "/backup/download":
+  ## Get a file
+  createTFD()
+  if not c.loggedIn or c.rank notin [Admin, Moderator]:
+    redirect("/")
+
+  let filename = @"backupname"
+
+  var filepath = backupDir(db) & filename
+
+  if not fileExists(filepath):
+    redirect("/backup/settings?msg=" & encodeUrl("Error, the backup file was not found with the name: " & filename))
+
+  # Serve the file
+  sendFile(filepath)
+
+get "/backup/delete":
+  createTFD()
+  if not c.loggedIn or c.rank notin [Admin, Moderator]:
+    redirect("/")
+
+  let backupDir = backupDir(db)
+  if fileExists(backupDir & @"backupname"):
+    let execOutput = execCmd("rm " & backupDir & @"backupname")
+    if execOutput == 0:
+      redirect("/backup/settings")
+    else:
+      redirect("/backup/settings?msg=" & encodeUrl("Error, the backup could not be deleted (" & @"backupname" & ")."))

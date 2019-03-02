@@ -36,19 +36,23 @@
 
   <hr>
 
-  <div class="backup buttons">
-    <a href="#!" class="btn btn-primary backupTime">Change backup time</a>
-    <a href="/backup/backupnow" class="btn btn-primary backupNow">Make a backup now</a>
+  <div class="backup buttons is-centered">
+    <a href="#!" class="button is-info is-small backupTime">Change backup time</a>
+    <a href="/backup/backupnow" class="button is-info is-small backupNow">Make a backup now</a>
   </div>
 
   # let backuptime = getValue(db, sql"SELECT value FROM backup_settings WHERE element = ?", "backuptime")
   # let keepbackup = getValue(db, sql"SELECT value FROM backup_settings WHERE element = ?", "keepbackup")
-  <form method="get" action="/backup/backupsettings" class="backup">
+  # var backupdir = getValue(db, sql"SELECT value FROM backup_settings WHERE element = ?", "backupdir")
+  # if backupdir == "":
+  #   backupdir = "data/"
+  # end if
+  <form method="get" action="/backup/backupsettings" class="backup hidden">
 
     <div>
-      <label>Backup time (0 or empty = disabled)</label>
+      <label>Backup time each x hour (0 or empty = disabled)</label>
       <div>
-        <input name="backuptime" class="backuptime" value="$backuptime" required type="number" pattern="[0-9]" /> hours
+        <input name="backuptime" class="backuptime input is-small" value="$backuptime" required type="number" pattern="[0-9]" />
       </div>
     </div>
 
@@ -57,28 +61,40 @@
     <div>
       <label>Keep backups for x days (0 or empty = keep forever)</label>
       <div>
-        <input name="keepbackup" class="keepbackup" value="$keepbackup" required type="number" pattern="[0-9]" /> days
+        <input name="keepbackup" class="keepbackup input is-small" value="$keepbackup" required type="number" pattern="[0-9]" />
       </div>
     </div>
 
-    <button type="submit" class="btn btn-success">Save new time</button>
+    <hr>
+
+    <div>
+      <label>Backup directory (standard = data/)</label>
+      <i>If you specify a custom path, the full path is required!</i>
+      <div>
+        <input name="backupdir" class="backupdir input is-small" value="$backupdir" required type="text" placeholder="data/"/>
+      </div>
+    </div>
+
+    <hr>
+
+    <button type="submit" class="button is-success is-small">Save new backup schedule</button>
   </form>
 
   <ul class="backup">
 
-#   for backup in walkDir("data/"):
+#   for backup in walkDir(backupdir):
 #     let (pd, ppath) = backup
 #     discard pd
-#     let backupName = replace(ppath, "data/", "")
+#     let backupName = replace(ppath, backupdir, "")
 #
 #     if backupName == "website.db":
 #       continue
 #     end if
 #
       <li class="backup">
-        <a href="/backup/download?backupname=$backupName" class="download" download="$backupName">Download</a>
-        <a href="#!" class="btn btn-danger load" data-url="/backup/loadbackup?backupname=$backupName">Load</a>
-        <a href="#!" class="btn btn-danger delete" data-url="/backup/delete?backupname=$backupName">Delete</a>
+        <a href="/backup/download?backupname=$backupName" class="download button is-link is-small" download="$backupName">Download</a>
+        <a href="#!" class="button is-warning is-small load" data-url="/backup/loadbackup?backupname=$backupName">Load</a>
+        <a href="#!" class="delete is-pulled-right has-text-danger is-small" data-url="/backup/delete?backupname=$backupName">Delete</a>
         <span class="name">$backupName</span>
       </li>
 

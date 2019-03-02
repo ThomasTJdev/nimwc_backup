@@ -3,7 +3,7 @@
 import
   asyncdispatch,
   asyncnet,
-  db_sqlite,
+  datetime2human,
   logging,
   os,
   osproc,
@@ -11,9 +11,10 @@ import
   times,
   uri
 
+when defined(postgres): import db_postgres
+else:                   import db_sqlite
 
 import ../../nimwcpkg/resources/session/user_data
-import ../../nimwcpkg/resources/utils/dates
 import ../../nimwcpkg/resources/utils/logging_nimwc
 import ../../nimwcpkg/resources/utils/plugins
 
@@ -33,19 +34,32 @@ pluginInfo()
 
 include "html.tmpl"
 
+let dbDir* = parentDir(getAppDir()) & "/data/"
 
 var runBackup* = true
 
 
-proc backupNow*(): bool =
+proc backupDir*(db: DbConn): string =
+  ## Get path to backups
+
+  let dir = getValue(db, sql"SELECT value FROM backup_settings WHERE element = ?", "backupdir")
+
+  if dir == "" or dir == "data/":
+    return parentDir(getAppDir()) & "/data/"
+  else:
+    return dir
+
+
+proc backupNow*(db: DbConn): bool =
   ## Create backup - copy current database to database_date
   ##
   ## Bool return is used in routes
 
   let dateName = epochDate($toInt(epochTime()), "YYYY_MM_DD-HH_mm")
-  let execOutput = execCmd("cp data/website.db data/website_" & dateName & ".db")
+  let backupDir = backupDir(db)
+  let execOutput = execCmd("cp " & dbDir & "website.db " & backupDir & "website_" & dateName & ".db")
   if execOutput != 0:
-    error("Backup plugin: Error while backing up data/website_" & dateName & ".db")
+    error("Backup plugin: Error while backing up " & backupDir & "website_" & dateName & ".db")
     return false
   return true
 
@@ -56,9 +70,10 @@ proc backupDelete*(db: DbConn) =
   let backupKeep = getValue(db, sql"SELECT value FROM backup_settings WHERE element = ?", "keepbackup")
 
   let olderThan = toInt(epochTime()) - parseInt(backupKeep)
+  let backupDir = backupDir(db)
 
-  for kind, path in walkDir("data/"):
-    if path == "data/website.db":
+  for kind, path in walkDir(backupDir):
+    if path == backupDir & "website.db":
       continue
 
     if toUnix(getLastModificationTime(path)) < olderThan:
@@ -99,7 +114,7 @@ proc cronBackup*(db: DbConn) {.async.} =
         break
 
       else:
-        discard backupNow()
+        discard backupNow(db)
 
 
 
@@ -124,5 +139,6 @@ proc backupStart*(db: DbConn) =
   if getAllRows(db, sql"SELECT id FROM backup_settings").len() == 0:
     exec(db, sql"INSERT INTO backup_settings (element, value) VALUES (?, ?)", "backuptime", "0")
     exec(db, sql"INSERT INTO backup_settings (element, value) VALUES (?, ?)", "keepbackup", "10")
+    exec(db, sql"INSERT INTO backup_settings (element, value) VALUES (?, ?)", "backupdir", "data/")
 
   asyncCheck cronBackup(db)
