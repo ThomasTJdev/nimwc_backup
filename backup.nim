@@ -136,9 +136,11 @@ proc backupStart*(db: DbConn) =
   );""", []):
     info("Backup plugin: Backup table created in database")
 
-  if getAllRows(db, sql"SELECT id FROM backup_settings").len() == 0:
+  if getValue(db, sql"SELECT id FROM backup_settings WHERE element = ?", "backuptime").len() == 0:
     exec(db, sql"INSERT INTO backup_settings (element, value) VALUES (?, ?)", "backuptime", "0")
-    exec(db, sql"INSERT INTO backup_settings (element, value) VALUES (?, ?)", "keepbackup", "10")
+  if getValue(db, sql"SELECT id FROM backup_settings WHERE element = ?", "keepbackup").len() == 0:
+    exec(db, sql"INSERT INTO backup_settings (element, value) VALUES (?, ?)", "keepbackup", "0")
+  if getValue(db, sql"SELECT id FROM backup_settings WHERE element = ?", "backupdir").len() == 0:
     exec(db, sql"INSERT INTO backup_settings (element, value) VALUES (?, ?)", "backupdir", "data/")
 
   asyncCheck cronBackup(db)
