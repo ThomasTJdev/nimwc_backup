@@ -82,6 +82,7 @@
 
   <ul class="backup">
 
+#   var backupFiles: seq[string]
 #   for backup in walkDir(backupdir):
 #     let (pd, ppath) = backup
 #     discard pd
@@ -91,13 +92,18 @@
 #       continue
 #     end if
 #
+#     backupFiles.add(backupName)
+#   end for
+#
+#   backupFiles.sort()
+#
+#   for backupName in backupFiles:
       <li class="backup">
         <a href="/backup/download?backupname=$backupName" class="download button is-link is-small" download="$backupName">Download</a>
         <a href="#!" class="button is-warning is-small load" data-url="/backup/loadbackup?backupname=$backupName">Load</a>
         <a href="#!" class="delete is-pulled-right has-text-danger is-small" data-url="/backup/delete?backupname=$backupName">Delete</a>
         <div class="name">$backupName</div>
       </li>
-
 #   end for
   </ul>
 </div>

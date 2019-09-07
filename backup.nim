@@ -1,12 +1,14 @@
 # Copyright 2018 - Thomas T. Jarløv
 
 import
+  algorithm,
   asyncdispatch,
   asyncnet,
   datetime2human,
   logging,
   os,
   osproc,
+  parsecfg,
   strutils,
   times,
   uri
@@ -35,7 +37,10 @@ pluginInfo()
 
 include "html.tmpl"
 
-let dbDir* = parentDir(getAppDir()) & "/data/"
+let dict    = loadConfig(replace(getAppDir(), "/nimwcpkg", "") & "/config/config.cfg")
+let dbName  = dict.getSectionValue("Database", when defined(postgres): "name" else: "host")
+
+let dbDir*  = parentDir(getAppDir()) & "/data/"
 
 var runBackup* = true
 
@@ -45,9 +50,11 @@ proc backupDir*(db: DbConn): string =
 
   let dir = getValue(db, sql"SELECT value FROM backup_settings WHERE element = ?", "backupdir")
 
-  if dir == "" or dir == "data/":
-    return parentDir(getAppDir()) & "/data/"
+  if dir == "" or dir == "backup/":
+    return parentDir(getAppDir()) & "/backup/"
   else:
+    if not existsOrCreateDir(dir):
+      info("Backup plugin: Creating backup dir " & dir)
     return dir
 
 
@@ -58,11 +65,19 @@ proc backupNow*(db: DbConn): bool =
 
   let dateName = epochDate($toInt(epochTime()), "YYYY_MM_DD-HH_mm")
   let backupDir = backupDir(db)
-  let execOutput = execCmd("cp " & dbDir & "website.db " & backupDir & "website_" & dateName & ".db")
-  if execOutput != 0:
+
+  let (backOut, backExitcode) = backupDb(dbName, filename=backupDir / "website_" & dateName & ".db")
+
+  if backExitcode != 0:
     error("Backup plugin: Error while backing up " & backupDir & "website_" & dateName & ".db")
     return false
   return true
+
+  #let execOutput = execCmd("cp " & dbDir & "website.db " & backupDir & "website_" & dateName & ".db")
+  #if execOutput != 0:
+  #  error("Backup plugin: Error while backing up " & backupDir & "website_" & dateName & ".db")
+  #  return false
+  #return true
 
 
 proc backupDelete*(db: DbConn) =
@@ -145,6 +160,6 @@ proc backupStart*(db: DbConn) =
   if getValue(db, sql"SELECT id FROM backup_settings WHERE element = ?", "keepbackup").len() == 0:
     exec(db, sql"INSERT INTO backup_settings (element, value) VALUES (?, ?)", "keepbackup", "0")
   if getValue(db, sql"SELECT id FROM backup_settings WHERE element = ?", "backupdir").len() == 0:
-    exec(db, sql"INSERT INTO backup_settings (element, value) VALUES (?, ?)", "backupdir", "data/")
+    exec(db, sql"INSERT INTO backup_settings (element, value) VALUES (?, ?)", "backupdir", "backup/")
 
   asyncCheck cronBackup(db)
