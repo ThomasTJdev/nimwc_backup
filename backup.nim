@@ -97,6 +97,7 @@ proc cronBackup*(db: DbConn) {.async.} =
     if backuptime == "" or backuptime == "0":
       runBackup = false
       debug("Backup plugin: No backuptime specified. Quitting loop.")
+      break
 
     else:
       when defined(dev):
@@ -114,7 +115,7 @@ proc cronBackup*(db: DbConn) {.async.} =
       # Check if backup is needed
       let backupmodifiedCheck = getValue(db, sql"SELECT modified FROM backup_settings WHERE element = ?", "backuptime")
       if backupmodified != backupmodifiedCheck:
-        break
+        continue
 
       else:
         discard backupNow(db)
