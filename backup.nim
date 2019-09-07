@@ -14,6 +14,7 @@ import
 when defined(postgres): import db_postgres
 else:                   import db_sqlite
 
+import ../../nimwcpkg/resources/administration/createdb
 import ../../nimwcpkg/resources/session/user_data
 import ../../nimwcpkg/resources/utils/logging_nimwc
 import ../../nimwcpkg/resources/utils/plugins
@@ -68,6 +69,8 @@ proc backupDelete*(db: DbConn) =
   ## Delete database older than x
 
   let backupKeep = getValue(db, sql"SELECT value FROM backup_settings WHERE element = ?", "keepbackup")
+  if backupKeep == "" or backupKeep == "0":
+    return
 
   let olderThan = toInt(epochTime()) - parseInt(backupKeep)
   let backupDir = backupDir(db)
