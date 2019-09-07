@@ -52,7 +52,7 @@
     <div>
       <label>Backup time each x hour (0 or empty = disabled)</label>
       <div>
-        <input name="backuptime" class="backuptime input is-small" value="$backuptime" required type="number" pattern="[0-9]" />
+        <input name="backuptime" class="backuptime input is-small" value="${backuptime}" required type="number" pattern="[0-9]" />
       </div>
     </div>
 
@@ -61,7 +61,7 @@
     <div>
       <label>Keep backups for x days (0 or empty = keep forever)</label>
       <div>
-        <input name="keepbackup" class="keepbackup input is-small" value="$keepbackup" required type="number" pattern="[0-9]" />
+        <input name="keepbackup" class="keepbackup input is-small" value="${keepbackup}" required type="number" pattern="[0-9]" />
       </div>
     </div>
 
@@ -71,7 +71,7 @@
       <label>Backup directory (standard = backup/)</label>
       <i>If you specify a custom path, the full path is required!</i>
       <div>
-        <input name="backupdir" class="backupdir input is-small" value="$backupdir" required type="text" placeholder="backup/"/>
+        <input name="backupdir" class="backupdir input is-small" value="${backupdir}" required type="text" placeholder="backup/"/>
       </div>
     </div>
 
@@ -99,10 +99,17 @@
 #
 #   for backupName in backupFiles:
       <li class="backup">
-        <a href="/backup/download?backupname=$backupName" class="download button is-link is-small" download="$backupName">Download</a>
-        <a href="#!" class="button is-warning is-small load" data-url="/backup/loadbackup?backupname=$backupName">Load</a>
-        <a href="#!" class="delete is-pulled-right has-text-danger is-small" data-url="/backup/delete?backupname=$backupName">Delete</a>
-        <div class="name">$backupName</div>
+#       if backupName.contains(".tar.gz"):
+        <a href="/backup/download?backupname=${backupName}" class="download button is-link is-small" download="${backupName}">Download files</a>
+        <a href="#!" class="button is-warning is-small load" data-url="/backup/loadbackup?backupname=${backupName}">Import files</a>
+#       else:
+        <a href="/backup/download?backupname=${backupName}" class="download button is-link is-small" download="${backupName}">Download DB</a>
+#       when not defined(postgres):
+        <a href="#!" class="button is-warning is-small load" data-url="/backup/loadbackup?backupname=${backupName}">Load DB</a>
+#       end when
+#       end if
+        <a href="#!" class="delete is-pulled-right has-text-danger is-small" data-url="/backup/delete?backupname=${backupName}">Delete</a>
+        <div class="name">${backupName}</div>
       </li>
 #   end for
   </ul>

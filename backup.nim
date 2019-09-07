@@ -17,6 +17,7 @@ when defined(postgres): import db_postgres
 else:                   import db_sqlite
 
 import ../../nimwcpkg/resources/administration/createdb
+import ../../nimwcpkg/resources/files/files_efs
 import ../../nimwcpkg/resources/session/user_data
 import ../../nimwcpkg/resources/utils/logging_nimwc
 import ../../nimwcpkg/resources/utils/plugins
@@ -63,21 +64,37 @@ proc backupNow*(db: DbConn): bool =
   ##
   ## Bool return is used in routes
 
-  let dateName = epochDate($toInt(epochTime()), "YYYY_MM_DD-HH_mm")
-  let backupDir = backupDir(db)
+  let backupDir     = backupDir(db)
+  let backupDirTmp  = backupDir / "tmpfiles"
+  let dateName      = epochDate($toInt(epochTime()), "YYYY_MM_DD-HH_mm")
 
+  # Files
+  let efspublic   = storageEFS & "/files/public/"
+  let efsprivate  = storageEFS & "/files/private/"
+  let public      = replace(getAppDir(), "/nimwcpkg", "/public")
+
+  if findExe("tar").len() > 0:
+    if dirExists(backupDirTmp): removeDir(backupDirTmp)
+    createDir(backupDirTmp)
+    createDir(backupDirTmp / "filespublic")
+    createDir(backupDirTmp / "filesprivate")
+    createDir(backupDirTmp / "public")
+    discard execCmd("cp -R " & efspublic & "* " & backupDirTmp & "/filespublic/")
+    discard execCmd("cp -R " & efsprivate & "* " & backupDirTmp & "/filesprivate/")
+    discard execCmd("cp -R " & public & "* " & backupDirTmp & "/public/")
+    # Create archive
+    discard execCmd("tar -czf " & backupDir & "/website_" & dateName & "_files.tar.gz -C " & backupDirTmp & " .")
+
+    removeDir(backupDirTmp)
+
+
+  # Database
   let (backOut, backExitcode) = backupDb(dbName, filename=backupDir / "website_" & dateName & ".db")
 
   if backExitcode != 0:
     error("Backup plugin: Error while backing up " & backupDir & "website_" & dateName & ".db")
     return false
   return true
-
-  #let execOutput = execCmd("cp " & dbDir & "website.db " & backupDir & "website_" & dateName & ".db")
-  #if execOutput != 0:
-  #  error("Backup plugin: Error while backing up " & backupDir & "website_" & dateName & ".db")
-  #  return false
-  #return true
 
 
 proc backupDelete*(db: DbConn) =
