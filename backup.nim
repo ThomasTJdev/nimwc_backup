@@ -89,7 +89,7 @@ proc backupNow*(db: DbConn): bool =
 
 
   # Database
-  let (backOut, backExitcode) = backupDb(dbName, filename=backupDir / "website_" & dateName & ".db")
+  let (backOut, backExitcode) = backupDb(dbName, filename=backupDir / "website_" & dateName & ".db", checksum=false, sign=false, targz=false)
 
   if backExitcode != 0:
     error("Backup plugin: Error while backing up " & backupDir & "website_" & dateName & ".db")
