@@ -38,16 +38,42 @@
     if not c.loggedIn or c.rank notin [Admin, Moderator]:
       redirect("/")
 
-    let backupDir = backupDir(db)
-    if fileExists(backupDir & @"backupname"):
-      echo "cp " & backupDir & @"backupname" & " " & dbDir & "website.db"
+    let backupDir  = backupDir(db)
+    let backupFile = backupDir & @"backupname"
+    echo "\n\n\n"
+    echo backupFile
+    echo "\n\n\n"
+    if not fileExists(backupFile):
+      redirect("/backup/settings?msg=" & encodeUrl("Error, no backup with that name was found."))
+
+    if @"backupname".contains("tar.gz"):
+      let backupDirLoad = backupDir / "load"
+      if dirExists(backupDirLoad): removeDir(backupDirLoad)
+      createDir(backupDirLoad)
+
+      # Extract archive
+      if execCmd("tar -xzf " & backupFile & " -C " & backupDirLoad) != 0:
+        redirect("/backup/settings?msg=" & encodeUrl("Error, could not unpack archive."))
+
+      let efspublic   = storageEFS & "/files/public/"
+      let efsprivate  = storageEFS & "/files/private/"
+      let public      = replace(getAppDir(), "/nimwcpkg", "/public/")
+      discard execCmd("cp -R " & backupDirLoad & "/./filespublic/* " & efspublic)
+      discard execCmd("cp -R " & backupDirLoad & "/./filesprivate/* " & efsprivate)
+      discard execCmd("cp -R " & backupDirLoad & "/./public/* " & public)
+
+      removeDir(backupDirLoad)
+
+    else:
+      when defined(postgres):
+        redirect("/backup/settings?msg=" & encodeUrl("Error, its not possible to load database on postgres."))
       try:
-        copyFile(backupDir & @"backupname", dbDir & "website.db")
-        redirect("/backup/settings?msg=" & encodeUrl("Backup \"" & @"backupname" & "\" was loaded."))
+        copyFile(backupFile, dbDir & "website.db")
       except:
         redirect("/backup/settings?msg=" & encodeUrl("Error, the backup could not be loaded."))
 
-    redirect("/backup/settings?msg=" & encodeUrl("Error, no backup with that name was found."))
+    redirect("/backup/settings?msg=" & encodeUrl("Backup \"" & @"backupname" & "\" was loaded."))
+
 
   get "/backup/backupnow":
     createTFD()
