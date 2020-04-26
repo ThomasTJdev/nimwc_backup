@@ -9,10 +9,18 @@
     createTFD()
     if not c.loggedIn or c.rank notin [Admin, Moderator]:
       redirect("/")
-
-    if (not isDigit(@"backuptime") or "." in @"backuptime") or (not isDigit(@"keepbackup") or "." in @"keepbackup"):
+    
+    if @"backuptime" == "" or @"keepbackup" == "":
       redirect("/backup/settings?msg=" & encodeUrl("Backup time needs to be a whole number. You provided backuptime: " & @"backuptime" & " and keep backup: " & @"keepbackup"))
-
+      
+    for i in @"backuptime":
+      if not isDigit(i):
+        redirect("/backup/settings?msg=" & encodeUrl("Backup time needs to be a whole number. You provided backuptime: " & @"backuptime" & " and keep backup: " & @"keepbackup"))
+    
+    for i in @"keepbackup":
+      if not isDigit(i):
+        redirect("/backup/settings?msg=" & encodeUrl("Backup time needs to be a whole number. You provided backuptime: " & @"backuptime" & " and keep backup: " & @"keepbackup"))
+    
     # Update backup time
     let execUno = tryExec(db, sql"UPDATE backup_settings SET value = ?, modified = ? WHERE element = ?", @"backuptime", toInt(epochTime()), "backuptime")
 
